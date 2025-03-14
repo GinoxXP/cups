@@ -16,8 +16,8 @@ public class Player : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
-        body.SetActive(false);
-        camera.gameObject.SetActive(false);
+        SetActiveBody(false);
+        SetActiveCamera(false);
 
         //if (IsServer)
         //    return;
@@ -29,5 +29,15 @@ public class Player : NetworkBehaviour
         }
 
         playerName.Value = AuthenticationService.Instance.Profile;
+    }
+
+    public void SetActiveBody(bool state)
+    {
+        body.SetActive(state);
+    }
+
+    public void SetActiveCamera(bool state)
+    {
+        camera.gameObject.SetActive(state);
     }
 }

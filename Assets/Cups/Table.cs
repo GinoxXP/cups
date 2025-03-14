@@ -7,7 +7,11 @@ public class Table : NetworkBehaviour
     [SerializeField]
     private Transform playerSitsOrigin;
     [SerializeField]
+    private Transform lookOrigin;
+    [SerializeField]
     private Transform gameBoard;
+    [SerializeField]
+    private float gameBoardSize;
     [SerializeField]
     private GameObject cupPrefab;
 
@@ -15,19 +19,38 @@ public class Table : NetworkBehaviour
 
     public List<Transform> PlayersSits => playersSits;
 
+    public Transform LookOrigin => lookOrigin;
+
     private void Awake()
     {
         for (int i = 0; i < playerSitsOrigin.childCount; i++)
             playersSits.Add(playerSitsOrigin.GetChild(i));
     }
 
-    public override void OnNetworkSpawn()
+    public void SpawnCups(int players)
     {
-        if (!IsServer)
-            return;
+        var vodkaCups = players * 5;
+        var poisonCups = players * 2;
 
-        var cup = Instantiate(cupPrefab, gameBoard);
-        var instanceNetworkObject = cup.GetComponent<NetworkObject>();
+        for (var i = 0; i < vodkaCups; i++)
+            SpawnCup(Cup.ContainmenType.Vodka);
+
+        for (var i = 0; i < poisonCups; i++)
+            SpawnCup(Cup.ContainmenType.Poison);
+
+    }
+
+    private void SpawnCup(Cup.ContainmenType containmenType)
+    {
+        var cupGameObject = Instantiate(cupPrefab, gameBoard);
+
+        var cup = cupGameObject.GetComponent<Cup>();
+        cup.Containment = containmenType;
+
+        var position = gameBoard.position + new Vector3(Random.insideUnitCircle.x, 0, Random.insideUnitCircle.y) * gameBoardSize;
+        cup.transform.position = position;
+
+        var instanceNetworkObject = cupGameObject.GetComponent<NetworkObject>();
         instanceNetworkObject.Spawn();
     }
 }
