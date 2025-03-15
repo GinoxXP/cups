@@ -18,6 +18,12 @@ public class Player : NetworkBehaviour
     private PlayerInput playerInput;
     private Vector2 pointPosition;
 
+    public int Eyes
+    {
+        get => eyes.Value;
+        set => eyes.Value = value;
+    }
+
     public string Name => playerName.Value.ToString();
 
     public event Action<ulong, ulong, Cup.ContainmentType> CupSelected;
@@ -34,6 +40,12 @@ public class Player : NetworkBehaviour
             return;
 
         playerName.Value = AuthenticationService.Instance.Profile;
+        eyes.OnValueChanged += OnEyesChanged;
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        eyes.OnValueChanged -= OnEyesChanged;
     }
 
     public void SetActiveBody(bool state)
@@ -57,6 +69,15 @@ public class Player : NetworkBehaviour
             return;
 
         Interact();
+    }
+
+    public void Heal()
+    {
+        Eyes = 2;
+    }
+
+    private void OnEyesChanged(int oldValue, int newValue)
+    {
     }
 
     private void Interact()

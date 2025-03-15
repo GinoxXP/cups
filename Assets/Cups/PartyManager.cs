@@ -73,6 +73,7 @@ public class PartyManager : NetworkBehaviour
                 break;
 
             case GameState.Finish:
+                FinishUI();
                 break;
 
             default:
@@ -102,6 +103,17 @@ public class PartyManager : NetworkBehaviour
         GUILayout.Label($"It's {(isYourMove ? "your" : moveQueueEnumerator.Current.Name)} move");
     }
 
+    private void FinishUI()
+    {
+        GUILayout.Label($"Player {moveQueue.First().Name} won!");
+
+        if (IsHost)
+        {
+            if (GUILayout.Button("Start game"))
+                StartGame();
+        }
+    }
+
     private void StartGame()
     {
         state.Value = GameState.Started;
@@ -112,6 +124,8 @@ public class PartyManager : NetworkBehaviour
         {
             var player = players[i];
             var sit = table.PlayersSits[i];
+
+            player.Heal();
 
             player.transform.position = sit.position;
 
@@ -133,25 +147,40 @@ public class PartyManager : NetworkBehaviour
             return;
 
         if (containment == Cup.ContainmentType.Poison)
-        {
-            
-        }
+            currentPlayerMove.Eyes--;
 
         var networkObject = NetworkManager.SpawnManager.SpawnedObjects[networkId];
-        networkObject.Despawn();
+        table.DespawnCup(networkObject);
 
         NextMoveRpc();
+
+        if (moveQueue.Count == 1)
+        {
+            state.Value = GameState.Finish;
+        }
     }
 
     [Rpc(SendTo.Everyone)]
     private void NextMoveRpc()
     {
         moveQueueEnumerator.MoveNext();
+        var nextPlayer = moveQueueEnumerator.Current;
+
+        for (int i = moveQueue.Count - 1; i >= 0 ; i--)
+        {
+            if (moveQueue[i].Eyes == 0)
+                moveQueue.RemoveAt(i);
+        }
+
+        moveQueueEnumerator = new CircularEnumerator<Player>(moveQueue);
+        while (nextPlayer != moveQueueEnumerator.Current)
+            moveQueueEnumerator.MoveNext();
     }
 
     [Rpc(SendTo.Everyone)]
     private void StartGameRpc()
     {
+        moveQueue.Clear();
         foreach(var player in players)
         {
             player.SetActiveBody(true);

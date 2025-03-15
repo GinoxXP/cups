@@ -2,12 +2,12 @@ using Unity.Netcode;
 
 public class Cup : NetworkBehaviour
 {
-    private ContainmentType containment;
+    private NetworkVariable<ContainmentType> containment = new();
 
     public ContainmentType Containment
     {
-        get => containment;
-        set => containment = value;
+        get => containment.Value;
+        set => containment.Value = value;
     }
 
     public enum ContainmentType

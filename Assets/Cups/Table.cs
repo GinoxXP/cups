@@ -17,6 +17,8 @@ public class Table : NetworkBehaviour
 
     private List<Transform> playersSits = new();
 
+    private List<NetworkObject> cups = new();
+
     public List<Transform> PlayersSits => playersSits;
 
     public Transform LookOrigin => lookOrigin;
@@ -29,6 +31,8 @@ public class Table : NetworkBehaviour
 
     public void SpawnCups(int players)
     {
+        DespawnCups();
+
         var vodkaCups = players * 5;
         var poisonCups = players * 2;
 
@@ -40,9 +44,18 @@ public class Table : NetworkBehaviour
 
     }
 
+    public void DespawnCup(NetworkObject networkObject)
+    {
+        networkObject.Despawn();
+        cups.Remove(networkObject);
+    }
+
     private void SpawnCup(Cup.ContainmentType containmenType)
     {
         var cupGameObject = Instantiate(cupPrefab, gameBoard);
+
+        var instanceNetworkObject = cupGameObject.GetComponent<NetworkObject>();
+        instanceNetworkObject.Spawn();
 
         var cup = cupGameObject.GetComponent<Cup>();
         cup.Containment = containmenType;
@@ -50,7 +63,14 @@ public class Table : NetworkBehaviour
         var position = gameBoard.position + new Vector3(Random.insideUnitCircle.x, 0, Random.insideUnitCircle.y) * gameBoardSize;
         cup.transform.position = position;
 
-        var instanceNetworkObject = cupGameObject.GetComponent<NetworkObject>();
-        instanceNetworkObject.Spawn();
+        cups.Add(instanceNetworkObject);
+    }
+
+    private void DespawnCups()
+    {
+        foreach (var cup in cups)
+            cup.Despawn();
+
+        cups.Clear();
     }
 }
