@@ -33,14 +33,14 @@ public class Table : NetworkBehaviour
         var poisonCups = players * 2;
 
         for (var i = 0; i < vodkaCups; i++)
-            SpawnCup(Cup.ContainmenType.Vodka);
+            SpawnCup(Cup.ContainmentType.Vodka);
 
         for (var i = 0; i < poisonCups; i++)
-            SpawnCup(Cup.ContainmenType.Poison);
+            SpawnCup(Cup.ContainmentType.Poison);
 
     }
 
-    private void SpawnCup(Cup.ContainmenType containmenType)
+    private void SpawnCup(Cup.ContainmentType containmenType)
     {
         var cupGameObject = Instantiate(cupPrefab, gameBoard);
 

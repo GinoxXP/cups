@@ -2,15 +2,15 @@ using Unity.Netcode;
 
 public class Cup : NetworkBehaviour
 {
-    private ContainmenType containment;
+    private ContainmentType containment;
 
-    public ContainmenType Containment
+    public ContainmentType Containment
     {
         get => containment;
         set => containment = value;
     }
 
-    public enum ContainmenType
+    public enum ContainmentType
     {
         Vodka,
         Poison,

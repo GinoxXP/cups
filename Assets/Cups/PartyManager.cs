@@ -9,6 +9,11 @@ public class PartyManager : NetworkBehaviour
     private Table table;
 
     private List<Player> players = new();
+    private CircularList<Player> moveQueue = new();
+
+    private NetworkVariable<GameState> state = new NetworkVariable<GameState>();
+
+    private CircularEnumerator<Player> moveQueueEnumerator { get; set; }
 
     public override void OnNetworkSpawn()
     {
@@ -57,21 +62,50 @@ public class PartyManager : NetworkBehaviour
         if (players.Count == 0)
             return;
 
+        switch (state.Value)
+        {
+            case GameState.Lobby:
+                LobbyUI();
+                break;
+
+            case GameState.Started:
+                StartedUI();
+                break;
+
+            case GameState.Finish:
+                break;
+
+            default:
+                break;
+        }
+    }
+
+    private void LobbyUI()
+    {
         if (IsHost)
         {
             if (GUILayout.Button("Start game"))
                 StartGame();
         }
+
         GUILayout.Label($"Players connected: {players.Count}");
 
-        foreach(var player in players)
+        foreach (var player in players)
         {
             GUILayout.Label($"{player.Name} {(player.IsOwner ? " (You)" : string.Empty)}");
         }
     }
 
+    private void StartedUI()
+    {
+        var isYourMove = NetworkManager.LocalClientId == moveQueueEnumerator.Current.OwnerClientId;
+        GUILayout.Label($"It's {(isYourMove ? "your" : moveQueueEnumerator.Current.Name)} move");
+    }
+
     private void StartGame()
     {
+        state.Value = GameState.Started;
+
         StartGameRpc();
 
         for (var i = 0; i < players.Count; i++)
@@ -90,6 +124,31 @@ public class PartyManager : NetworkBehaviour
         table.SpawnCups(players.Count);
     }
 
+    [Rpc(SendTo.Server)]
+    private void OnCupSelectedRpc(ulong playerId, ulong networkId, Cup.ContainmentType containment)
+    {
+        var currentPlayerMove = moveQueueEnumerator.Current;
+
+        if (playerId != currentPlayerMove.OwnerClientId)
+            return;
+
+        if (containment == Cup.ContainmentType.Poison)
+        {
+            
+        }
+
+        var networkObject = NetworkManager.SpawnManager.SpawnedObjects[networkId];
+        networkObject.Despawn();
+
+        NextMoveRpc();
+    }
+
+    [Rpc(SendTo.Everyone)]
+    private void NextMoveRpc()
+    {
+        moveQueueEnumerator.MoveNext();
+    }
+
     [Rpc(SendTo.Everyone)]
     private void StartGameRpc()
     {
@@ -97,6 +156,19 @@ public class PartyManager : NetworkBehaviour
         {
             player.SetActiveBody(true);
             player.SetActiveCamera(player.IsLocalPlayer);
+
+            player.CupSelected += OnCupSelectedRpc;
+
+            moveQueue.Add(player);
         }
+
+        moveQueueEnumerator = new CircularEnumerator<Player>(moveQueue);
+    }
+
+    private enum GameState
+    {
+        Lobby,
+        Started,
+        Finish,
     }
 }
