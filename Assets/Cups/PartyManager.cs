@@ -183,7 +183,7 @@ public class PartyManager : NetworkBehaviour
         moveQueue.Clear();
         foreach(var player in players)
         {
-            player.SetActiveBody(true);
+            player.SetActiveBody(!player.IsLocalPlayer);
             player.SetActiveCamera(player.IsLocalPlayer);
 
             player.CupSelected += OnCupSelectedRpc;

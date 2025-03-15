@@ -1,4 +1,6 @@
 using System;
+using System.Linq;
+using TMPro;
 using Unity.Collections;
 using Unity.Netcode;
 using Unity.Services.Authentication;
@@ -7,6 +9,12 @@ using UnityEngine.InputSystem;
 
 public class Player : NetworkBehaviour
 {
+    private static readonly String[] faces =
+        {
+        "O_O",
+        "x_O",
+        "x.x",
+        };
     private NetworkVariable<FixedString64Bytes> playerName = new NetworkVariable<FixedString64Bytes>(writePerm: NetworkVariableWritePermission.Owner);
     private NetworkVariable<int> eyes = new NetworkVariable<int>(2);
 
@@ -14,6 +22,8 @@ public class Player : NetworkBehaviour
     private GameObject body;
     [SerializeField]
     private new Camera camera;
+    [SerializeField]
+    private TMP_Text faceIndicator;
 
     private PlayerInput playerInput;
     private Vector2 pointPosition;
@@ -78,6 +88,7 @@ public class Player : NetworkBehaviour
 
     private void OnEyesChanged(int oldValue, int newValue)
     {
+        faceIndicator.text = faces[faces.Length - 1 - newValue];
     }
 
     private void Interact()
