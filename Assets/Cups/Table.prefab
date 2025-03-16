@@ -174,7 +174,7 @@ MonoBehaviour:
   playerSitsOrigin: {fileID: 8603238556980415932}
   lookOrigin: {fileID: 6606696579576870263}
   gameBoard: {fileID: 108374478546272348}
-  gameBoardSize: 0.5
+  gameBoardSize: 0.45
   cupPrefab: {fileID: 5757628832090231557, guid: 3d7143aa414396c4fa6576ace7040f3b, type: 3}
 --- !u!1 &3638376247602081132
 GameObject:

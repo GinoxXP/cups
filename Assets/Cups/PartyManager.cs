@@ -7,6 +7,7 @@ public class PartyManager : NetworkBehaviour
 {
     private NetworkManager networkManager;
     private Table table;
+    private HealthIndicator healthIndicator;
 
     private List<Player> players = new();
     private CircularList<Player> moveQueue = new();
@@ -19,6 +20,7 @@ public class PartyManager : NetworkBehaviour
     {
         networkManager = FindFirstObjectByType<NetworkManager>();
         table = FindFirstObjectByType<Table>();
+        healthIndicator = FindFirstObjectByType<HealthIndicator>();
 
         networkManager.OnClientConnectedCallback += OnClientConnected;
     }
@@ -53,6 +55,9 @@ public class PartyManager : NetworkBehaviour
     {
         var players = FindObjectsByType<Player>(FindObjectsSortMode.InstanceID);
         var player = players.First(x => x.OwnerClientId == id);
+
+        if (player.IsLocalPlayer)
+            healthIndicator.RegisterPlayer(player);
 
         this.players.Add(player);
     }
