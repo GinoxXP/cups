@@ -74,9 +74,28 @@ public class Player : NetworkBehaviour
         Interact();
     }
 
-    public void Heal()
+    [Rpc(SendTo.Owner)]
+    public void HealRpc()
     {
         Eyes = 2;
+    }
+
+    [Rpc(SendTo.Owner)]
+    public void DamageRpc()
+    {
+        Eyes--;
+    }
+
+    [Rpc(SendTo.Owner)]
+    public void SetPositionRpc(Vector3 position)
+    {
+        transform.position = position;
+    }
+
+    [Rpc(SendTo.Owner)]
+    public void SetRotationRpc(Quaternion rotation)
+    {
+        transform.rotation = rotation;
     }
 
     private void OnEyesChanged(int oldValue, int newValue)

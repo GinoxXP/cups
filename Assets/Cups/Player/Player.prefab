@@ -450,6 +450,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
+  eyes:
+    m_InternalValue: 2
   body: {fileID: 6786329992103456711}
   camera: {fileID: 4320663751694419270}
   faceIndicator: {fileID: 3069123115421819955}
