@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.Netcode;
@@ -14,7 +13,7 @@ public class PartyManager : NetworkBehaviour
     private List<Player> players = new();
     private CircularList<Player> moveQueue = new();
 
-    private NetworkVariable<GameState> state = new NetworkVariable<GameState>();
+    private NetworkVariable<GameState> state = new();
 
     private CircularEnumerator<Player> moveQueueEnumerator { get; set; }
 
@@ -46,43 +45,35 @@ public class PartyManager : NetworkBehaviour
         StateChanged?.Invoke(State);
     }
 
-    private void OnClientConnected(ulong id)
+    private void OnClientConnected(ulong _)
     {
-        if (!IsSessionOwner)
+        if (!IsSessionOwner || State != GameState.Lobby)
             return;
 
-        AddPlayerToListRpc(id);
+        StartCoroutine(WaitForSpawnPlayerGameObject());
     }
 
-    private void AddConnectedPlayers()
+    private System.Collections.IEnumerator WaitForSpawnPlayerGameObject()
     {
-        var ids = networkManager.ConnectedClientsIds;
-        foreach (var id in ids)
-        {
-            StartCoroutine(AddPlayerToList(id));
-        }
+        yield return new WaitForSeconds(0.1f);
+        UpdatePlayersListRpc();
     }
 
     [Rpc(SendTo.Everyone)]
-    private void AddPlayerToListRpc(ulong id)
+    private void UpdatePlayersListRpc()
     {
-        if (players.Count == 0)
-            AddConnectedPlayers();
-        else
-            StartCoroutine(AddPlayerToList(id));
-    }
-
-    private IEnumerator AddPlayerToList(ulong id)
-    {
-        yield return new WaitForSeconds(0.1f);
-
+        this.players.Clear();
         var players = FindObjectsByType<Player>(FindObjectsSortMode.InstanceID);
-        var player = players.First(x => x.OwnerClientId == id);
+        
+        foreach (var player in players)
+        {
+            if (player.IsLocalPlayer)
+                healthIndicator.RegisterPlayer(player);
 
-        if (player.IsLocalPlayer)
-            healthIndicator.RegisterPlayer(player);
+            this.players.Add(player);
+        }
 
-        this.players.Add(player);
+        this.players.Reverse();
         PlayersChanged.Invoke(Players);
     }
 
@@ -160,6 +151,7 @@ public class PartyManager : NetworkBehaviour
             player.SetActiveBody(!player.IsLocalPlayer);
             player.SetActiveCamera(player.IsLocalPlayer);
 
+            player.CupSelected -= OnCupSelectedRpc;
             player.CupSelected += OnCupSelectedRpc;
 
             moveQueue.Add(player);

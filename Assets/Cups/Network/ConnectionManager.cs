@@ -92,6 +92,8 @@ public class ConnectionManager : MonoBehaviour
 
     public async Task JoinToSessionAsync(string code)
     {
+        State = ConnectionState.Connecting;
+
         try
         {
             AuthenticationService.Instance.SwitchProfile(profileName);

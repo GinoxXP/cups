@@ -1,4 +1,3 @@
-using System.Collections;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
@@ -20,7 +19,12 @@ public class FinishPanelUI : NetworkBehaviour
         OnStateChanged(partyManager.State);
     }
 
-    private void Update()
+    private void OnStateChanged(PartyManager.GameState state)
+    {
+        gameObject.SetActive(state == PartyManager.GameState.Finish);
+    }
+
+    private void OnEnable()
     {
         var winner = partyManager.CurrentMovePlayer;
         if (winner == null)
@@ -28,12 +32,7 @@ public class FinishPanelUI : NetworkBehaviour
 
         winnerText.text = $"{winner.Name} is winner this game!";
 
-        restartButton.SetActive(IsSessionOwner);
-    }
-
-    private void OnStateChanged(PartyManager.GameState state)
-    {
-        gameObject.SetActive(state == PartyManager.GameState.Finish);
+        restartButton.SetActive(partyManager.IsSessionOwner);
     }
 
     public void OnRestart()

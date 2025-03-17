@@ -28,7 +28,6 @@ public class PartyPanelUI : NetworkBehaviour
         OnStateChanged(connectionManager.State);
     }
 
-
     private void Update()
     {
         sessionCode.text = $"Session code: {connectionManager.SessionCode}";
