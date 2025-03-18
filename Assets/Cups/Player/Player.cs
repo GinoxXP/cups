@@ -44,6 +44,8 @@ public class Player : NetworkBehaviour
 
         playerName.Value = AuthenticationService.Instance.Profile;
         eyes.OnValueChanged += OnEyesChanged;
+
+        OnEyesChanged(0, Eyes);
     }
 
     public override void OnNetworkDespawn()
@@ -98,7 +100,7 @@ public class Player : NetworkBehaviour
         transform.rotation = rotation;
     }
 
-    private void OnEyesChanged(int oldValue, int newValue)
+    private void OnEyesChanged(int _, int newValue)
     {
         var faceId = Faces.FaceStates.Length - 1 - newValue;
         
