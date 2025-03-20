@@ -15,24 +15,21 @@ public class FinishPanelUI : NetworkBehaviour
     {
         partyManager = FindFirstObjectByType<PartyManager>();
         partyManager.StateChanged += OnStateChanged;
+        partyManager.PlayerWon += OnPlayerWon;
 
         OnStateChanged(partyManager.State);
+    }
+
+    private void OnPlayerWon(Player winner)
+    {
+        winnerText.text = $"{winner.Name} is winner this game!";
+
+        restartButton.SetActive(partyManager.IsSessionOwner);
     }
 
     private void OnStateChanged(PartyManager.GameState state)
     {
         gameObject.SetActive(state == PartyManager.GameState.Finish);
-    }
-
-    private void OnEnable()
-    {
-        var winner = partyManager.CurrentMovePlayer;
-        if (winner == null)
-            return;
-
-        winnerText.text = $"{winner.Name} is winner this game!";
-
-        restartButton.SetActive(partyManager.IsSessionOwner);
     }
 
     public void OnRestart()

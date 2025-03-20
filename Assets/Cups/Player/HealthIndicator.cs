@@ -13,15 +13,15 @@ public class HealthIndicator : MonoBehaviour
 
     public void RegisterPlayer(Player player)
     {
-        player.eyes.OnValueChanged += OnEyesChanged;
+        player.EyesChanged += OnEyesChanged;
         gameObject.SetActive(true);
 
-        OnEyesChanged(0, player.Eyes);
+        OnEyesChanged(player.Eyes);
     }
 
-    private void OnEyesChanged(int _, int newValue)
+    private void OnEyesChanged(int value)
     {
-        var faceId = Faces.FaceStates.Length - 1 - newValue;
+        var faceId = Faces.FaceStates.Length - 1 - value;
         text.text = Faces.FaceStates[faceId];
     }
 }

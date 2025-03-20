@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.Netcode;
@@ -22,6 +23,8 @@ public class PartyManager : NetworkBehaviour
     public event Action<GameState> StateChanged;
 
     public event Action<Player> MoveChanged;
+
+    public event Action<Player> PlayerWon;
 
     public Player[] Players => players.ToArray();
 
@@ -53,7 +56,7 @@ public class PartyManager : NetworkBehaviour
         StartCoroutine(WaitForSpawnPlayerGameObject());
     }
 
-    private System.Collections.IEnumerator WaitForSpawnPlayerGameObject()
+    private IEnumerator WaitForSpawnPlayerGameObject()
     {
         yield return new WaitForSeconds(0.1f);
         UpdatePlayersListRpc();
@@ -83,12 +86,13 @@ public class PartyManager : NetworkBehaviour
 
         StartGameRpc();
 
+        moveQueue.Clear();
         for (var i = 0; i < players.Count; i++)
         {
             var player = players[i];
             var sit = table.PlayersSits[i];
 
-            player.HealRpc();
+            player.Heal();
 
             player.SetPositionRpc(sit.position);
 
@@ -96,70 +100,80 @@ public class PartyManager : NetworkBehaviour
             lookDirection.y = 0;
 
             player.SetRotationRpc(Quaternion.LookRotation(lookDirection, Vector3.up));
+
+            moveQueue.Add(player);
+            moveQueueEnumerator = new CircularEnumerator<Player>(moveQueue);
         }
 
         table.SpawnCups(players.Count);
+
+        
+        MoveChangedRpc(0);
+    }
+
+    [Rpc(SendTo.Everyone)]
+    private void StartGameRpc()
+    {
+        foreach (var player in players)
+        {
+            player.SetActiveBody(!player.IsLocalPlayer);
+            player.SetActiveCamera(player.IsLocalPlayer);
+
+            if (player.IsLocalPlayer)
+            {
+                player.CupSelected -= OnCupSelectedRpc;
+                player.CupSelected += OnCupSelectedRpc;
+            }
+        }
     }
 
     [Rpc(SendTo.Owner)]
     private void OnCupSelectedRpc(ulong playerId, ulong networkId, Cup.ContainmentType containment)
     {
+        if (State != GameState.Started)
+            return;
+
         var currentPlayerMove = moveQueueEnumerator.Current;
 
         if (playerId != currentPlayerMove.OwnerClientId)
             return;
 
         if (containment == Cup.ContainmentType.Poison)
-            currentPlayerMove.DamageRpc();
+            currentPlayerMove.Damage();
 
         var networkObject = NetworkManager.SpawnManager.SpawnedObjects[networkId];
         table.DespawnCup(networkObject);
 
-        NextMoveRpc();
+        var nextPlayer = moveQueueEnumerator.Current;
+
+        if (currentPlayerMove.Eyes <= 0)
+            moveQueue.Remove(currentPlayerMove);
+
+        moveQueueEnumerator.MoveNext();
+
+        var indexMovePlayer = players.IndexOf(moveQueueEnumerator.Current);
 
         if (moveQueue.Count == 1)
         {
             state.Value = GameState.Finish;
+            PlayerWonRpc(indexMovePlayer);
         }
+
+        MoveChangedRpc(indexMovePlayer);
     }
 
     [Rpc(SendTo.Everyone)]
-    private void NextMoveRpc()
+    private void MoveChangedRpc(int playerIndex)
     {
-        moveQueueEnumerator.MoveNext();
-        var nextPlayer = moveQueueEnumerator.Current;
-
-        for (int i = moveQueue.Count - 1; i >= 0 ; i--)
-        {
-            if (moveQueue[i].Eyes == 0)
-                moveQueue.RemoveAt(i);
-        }
-
-        moveQueueEnumerator = new CircularEnumerator<Player>(moveQueue);
-        while (nextPlayer != moveQueueEnumerator.Current)
-            moveQueueEnumerator.MoveNext();
-
-        MoveChanged?.Invoke(moveQueueEnumerator.Current);
+        var player = players[playerIndex];
+        MoveChanged?.Invoke(player);
     }
 
     [Rpc(SendTo.Everyone)]
-    private void StartGameRpc()
+    private void PlayerWonRpc(int playerIndex)
     {
-        moveQueue.Clear();
-        foreach(var player in players)
-        {
-            player.SetActiveBody(!player.IsLocalPlayer);
-            player.SetActiveCamera(player.IsLocalPlayer);
-
-            player.CupSelected -= OnCupSelectedRpc;
-            player.CupSelected += OnCupSelectedRpc;
-
-            moveQueue.Add(player);
-        }
-
-        moveQueueEnumerator = new CircularEnumerator<Player>(moveQueue);
-
-        MoveChanged?.Invoke(moveQueueEnumerator.Current);
+        var player = players[playerIndex];
+        PlayerWon?.Invoke(player);
     }
 
     public enum GameState

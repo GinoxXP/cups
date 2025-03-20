@@ -9,7 +9,6 @@ using UnityEngine.InputSystem;
 public class Player : NetworkBehaviour
 {
     private NetworkVariable<FixedString64Bytes> playerName = new NetworkVariable<FixedString64Bytes>(writePerm: NetworkVariableWritePermission.Owner);
-    public NetworkVariable<int> eyes = new NetworkVariable<int>(2);
 
     [SerializeField]
     private GameObject body;
@@ -20,16 +19,28 @@ public class Player : NetworkBehaviour
 
     private PlayerInput playerInput;
     private Vector2 pointPosition;
+    private int eyes = 2;
 
     public int Eyes
     {
-        get => eyes.Value;
-        set => eyes.Value = value;
+        get => eyes;
+        set
+        {
+            if (eyes == value)
+                return;
+
+            eyes = value;
+            EyesUpdateRpc(Eyes);
+
+            UpdateFace();
+        }
     }
 
     public string Name => playerName.Value.ToString();
 
     public event Action<ulong, ulong, Cup.ContainmentType> CupSelected;
+
+    public event Action<int> EyesChanged;
 
     public override void OnNetworkSpawn()
     {
@@ -43,14 +54,7 @@ public class Player : NetworkBehaviour
             return;
 
         playerName.Value = AuthenticationService.Instance.Profile;
-        eyes.OnValueChanged += OnEyesChanged;
-
-        OnEyesChanged(0, Eyes);
-    }
-
-    public override void OnNetworkDespawn()
-    {
-        eyes.OnValueChanged -= OnEyesChanged;
+        UpdateFace();
     }
 
     public void SetActiveBody(bool state)
@@ -76,14 +80,12 @@ public class Player : NetworkBehaviour
         Interact();
     }
 
-    [Rpc(SendTo.Owner)]
-    public void HealRpc()
+    public void Heal()
     {
         Eyes = 2;
     }
 
-    [Rpc(SendTo.Owner)]
-    public void DamageRpc()
+    public void Damage()
     {
         Eyes--;
     }
@@ -100,17 +102,22 @@ public class Player : NetworkBehaviour
         transform.rotation = rotation;
     }
 
-    private void OnEyesChanged(int _, int newValue)
-    {
-        var faceId = Faces.FaceStates.Length - 1 - newValue;
-        
-        SetFaceRpc(faceId);
-    }
-
     [Rpc(SendTo.Everyone)]
     private void SetFaceRpc(int faceId)
     {
         faceIndicator.text = Faces.FaceStates[faceId];
+    }
+
+    [Rpc(SendTo.Everyone)]
+    private void EyesUpdateRpc(int eyes)
+    {
+        EyesChanged?.Invoke(eyes);
+    }
+
+    private void UpdateFace()
+    {
+        var faceId = Faces.FaceStates.Length - 1 - Eyes;
+        SetFaceRpc(faceId);
     }
 
     private void Interact()
