@@ -16,7 +16,7 @@ public class PartyManager : NetworkBehaviour
 
     private NetworkVariable<GameState> state = new();
 
-    private CircularEnumerator<Player> moveQueueEnumerator { get; set; }
+    private int currentMovePlayerIndex;
 
     public event Action<Player[]> PlayersChanged;
 
@@ -29,8 +29,6 @@ public class PartyManager : NetworkBehaviour
     public Player[] Players => players.ToArray();
 
     public GameState State => state.Value;
-
-    public Player CurrentMovePlayer => moveQueueEnumerator?.Current;
 
     public override void OnNetworkSpawn()
     {
@@ -102,8 +100,9 @@ public class PartyManager : NetworkBehaviour
             player.SetRotationRpc(Quaternion.LookRotation(lookDirection, Vector3.up));
 
             moveQueue.Add(player);
-            moveQueueEnumerator = new CircularEnumerator<Player>(moveQueue);
         }
+
+        currentMovePlayerIndex = 0;
 
         table.SpawnCups(players.Count);
 
@@ -133,7 +132,7 @@ public class PartyManager : NetworkBehaviour
         if (State != GameState.Started)
             return;
 
-        var currentPlayerMove = moveQueueEnumerator.Current;
+        var currentPlayerMove = moveQueue[currentMovePlayerIndex];
 
         if (playerId != currentPlayerMove.OwnerClientId)
             return;
@@ -144,14 +143,15 @@ public class PartyManager : NetworkBehaviour
         var networkObject = NetworkManager.SpawnManager.SpawnedObjects[networkId];
         table.DespawnCup(networkObject);
 
-        var nextPlayer = moveQueueEnumerator.Current;
-
         if (currentPlayerMove.Eyes <= 0)
             moveQueue.Remove(currentPlayerMove);
+        else
+            currentMovePlayerIndex++;
 
-        moveQueueEnumerator.MoveNext();
+        if (currentMovePlayerIndex > moveQueue.Count - 1)
+            currentMovePlayerIndex = 0;
 
-        var indexMovePlayer = players.IndexOf(moveQueueEnumerator.Current);
+        var indexMovePlayer = players.IndexOf(moveQueue[currentMovePlayerIndex]);
 
         if (moveQueue.Count == 1)
         {
