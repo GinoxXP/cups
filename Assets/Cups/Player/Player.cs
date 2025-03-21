@@ -16,6 +16,8 @@ public class Player : NetworkBehaviour
     private new Camera camera;
     [SerializeField]
     private TMP_Text faceIndicator;
+    [SerializeField]
+    private TMP_Text playername;
 
     private PlayerInput playerInput;
     private Vector2 pointPosition;
@@ -60,6 +62,9 @@ public class Player : NetworkBehaviour
     public void SetActiveBody(bool state)
     {
         body.SetActive(state);
+
+        if (state)
+            SetPlayerNameTagRpc();
     }
 
     public void SetActiveCamera(bool state)
@@ -106,6 +111,12 @@ public class Player : NetworkBehaviour
     private void SetFaceRpc(int faceId)
     {
         faceIndicator.text = Faces.FaceStates[faceId];
+    }
+
+    [Rpc(SendTo.Everyone)]
+    private void SetPlayerNameTagRpc()
+    {
+        playername.text = Name;
     }
 
     [Rpc(SendTo.Everyone)]
